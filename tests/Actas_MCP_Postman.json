@@ -1,0 +1,186 @@
+{
+  "info": {
+    "name": "Actas MCP Server — Pruebas",
+    "description": "Colección para probar las tools MCP del servidor de actas bancarias.\nEl servidor MCP usa Streamable HTTP transport.\nEndpoint local: http://localhost:7071/runtime/webhooks/mcp\nEndpoint Azure: https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp\n\nFlujo sugerido: ejecutar en orden 01 -> 07. Cada request usa variables de colección\n(session_id, draft_id) que se completan automáticamente con un script en 'Tests'.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url_local", "value": "http://localhost:7071" },
+    { "key": "base_url_azure", "value": "https://TU-FUNCTION-APP.azurewebsites.net" },
+    { "key": "mcp_extension_key", "value": "TU-MCP-EXTENSION-KEY", "description": "Solo se usa contra Azure: az functionapp keys list --query systemKeys.mcp_extension" },
+    { "key": "session_id", "value": "" },
+    { "key": "draft_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 — Descubrir tools disponibles (local)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp/sse",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp", "sse"]
+        },
+        "description": "Lista todas las tools que expone el servidor MCP vía SSE."
+      }
+    },
+    {
+      "name": "01 — ActaWizard: create_session",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const text = body.result && body.result.content && body.result.content[0] && body.result.content[0].text;",
+              "if (text) { const parsed = JSON.parse(text); pm.collectionVariables.set('session_id', parsed.sessionId); }"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ActaWizard\",\n    \"arguments\": { \"action\": \"create_session\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        },
+        "description": "Crea una sesión nueva. El script de Tests guarda sessionId en {{session_id}} para los siguientes requests."
+      }
+    },
+    {
+      "name": "02 — ActaWizard: save_responses",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ActaWizard\",\n    \"arguments\": {\n      \"action\": \"save_responses\",\n      \"sessionId\": \"{{session_id}}\",\n      \"responses\": {\n        \"titulo\": \"Comité de Tecnología\",\n        \"fecha\": \"2026-07-01\",\n        \"participantes\": \"Ana Pérez, Juan Gómez\",\n        \"objetivo\": \"Revisar avances del trimestre\",\n        \"acuerdos\": \"Escalar con proveedor, Cerrar contrato\"\n      }\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        }
+      }
+    },
+    {
+      "name": "03 — ValidateActa",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ValidateActa\",\n    \"arguments\": { \"sessionId\": \"{{session_id}}\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        },
+        "description": "Respuesta esperada: {\"complete\": true, \"missingFields\": []}"
+      }
+    },
+    {
+      "name": "04 — GenerateDraft",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const text = body.result && body.result.content && body.result.content[0] && body.result.content[0].text;",
+              "if (text) { const parsed = JSON.parse(text); pm.collectionVariables.set('draft_id', parsed.draftId); }"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 4,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"GenerateDraft\",\n    \"arguments\": { \"sessionId\": \"{{session_id}}\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        }
+      }
+    },
+    {
+      "name": "05 — UpdateDraft",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 5,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"UpdateDraft\",\n    \"arguments\": {\n      \"draftId\": \"{{draft_id}}\",\n      \"instruction\": \"agregar Nota final de revisión\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        }
+      }
+    },
+    {
+      "name": "06 — ApproveDraft",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 6,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"ApproveDraft\",\n    \"arguments\": { \"draftId\": \"{{draft_id}}\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        }
+      }
+    },
+    {
+      "name": "07 — GenerateDocx",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 7,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"GenerateDocx\",\n    \"arguments\": { \"draftId\": \"{{draft_id}}\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_local}}/runtime/webhooks/mcp",
+          "host": ["{{base_url_local}}"],
+          "path": ["runtime", "webhooks", "mcp"]
+        },
+        "description": "Respuesta esperada: JSON con fileName, contentType y fileBase64 (el .docx codificado)."
+      }
+    },
+    {
+      "name": "08 — GenerateDraft (Azure, con key)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 8,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"GenerateDraft\",\n    \"arguments\": { \"sessionId\": \"{{session_id}}\" }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url_azure}}/runtime/webhooks/mcp?code={{mcp_extension_key}}",
+          "host": ["{{base_url_azure}}"],
+          "path": ["runtime", "webhooks", "mcp"],
+          "query": [{ "key": "code", "value": "{{mcp_extension_key}}" }]
+        },
+        "description": "Misma prueba pero contra Azure desplegado. Requiere mcp_extension_key."
+      }
+    }
+  ]
+}

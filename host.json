@@ -1,0 +1,35 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    },
+    "logLevel": {
+      "default": "Information",
+      "Host.Results": "Error",
+      "Function": "Information",
+      "Host.Aggregator": "Trace"
+    }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.0.0, 5.0.0)"
+  },
+  "extensions": {
+    "mcp": {
+      "instructions": "Servidor MCP para generación de actas bancarias de Empresa S.A. Tools disponibles: ActaWizard, ValidateActa, GenerateDraft, UpdateDraft, ApproveDraft, GenerateDocx.",
+      "serverName": "actas-mcp-server",
+      "serverVersion": "1.0.0",
+      "encryptClientState": true,
+      "messageOptions": {
+        "useAbsoluteUriForEndpoint": false
+      },
+      "system": {
+        "webhookAuthorizationLevel": "Anonymous"
+      }
+    }
+  }
+}
