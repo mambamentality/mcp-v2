@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from pathlib import Path
 from threading import RLock
 from typing import Dict, Optional
@@ -56,8 +58,17 @@ class JsonStore:
 
 class SessionStore(JsonStore):
     def __init__(self):
-        root = Path(__file__).resolve().parent.parent
-        super().__init__(root / ".data" / "sessions.json")
+        # Evitar escribir por defecto dentro de /home/site/wwwroot (Azure)
+        # Preferir un directorio configurable mediante la variable de entorno
+        # `MCP_DATA_DIR`. Si no está definida, usar el directorio temporal del
+        # sistema (por ejemplo /tmp) para evitar tocar el contenido desplegado.
+        env_root = os.environ.get("MCP_DATA_DIR")
+        if env_root:
+            root = Path(env_root)
+        else:
+            root = Path(tempfile.gettempdir())
+
+        super().__init__(root / "mcp_data" / "sessions.json")
 
     def save_session(self, session: ActaSession) -> None:
         self.set(session.session_id, session.to_dict())
@@ -71,8 +82,13 @@ class SessionStore(JsonStore):
 
 class DraftStore(JsonStore):
     def __init__(self):
-        root = Path(__file__).resolve().parent.parent
-        super().__init__(root / ".data" / "drafts.json")
+        env_root = os.environ.get("MCP_DATA_DIR")
+        if env_root:
+            root = Path(env_root)
+        else:
+            root = Path(tempfile.gettempdir())
+
+        super().__init__(root / "mcp_data" / "drafts.json")
 
     def save_draft(self, draft: Draft) -> None:
         self.set(draft.draft_id, draft.to_dict())

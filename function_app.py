@@ -20,3 +20,9 @@ register_generate_draft_tool(app)
 register_update_draft_tool(app)
 register_approve_draft_tool(app)
 register_generate_docx_tool(app)
+
+
+@app.route(route="health", auth_level=func.AuthLevel.ANONYMOUS)
+def health(req: func.HttpRequest) -> func.HttpResponse:
+	"""Ruta de healthcheck rápida para verificar que el worker/Python se cargó."""
+	return func.HttpResponse("ok", status_code=200)

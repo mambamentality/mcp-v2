@@ -1,9 +1,6 @@
 # El MCP tool trigger requiere azure-functions >= 1.24.0.
-# OJO: azure-functions 2.x requiere Python 3.13+. Si tu entorno usa
-# Python 3.10-3.12 (lo más común hoy en Azure Functions), usa la línea 1.x:
-azure-functions>=1.24.0,<2.0.0
-# Si tu entorno es Python 3.13+, podés usar en cambio:
-# azure-functions>=2.1.0
+# Para Python 3.13 en Azure Functions 4, usar la línea 2.x:
+azure-functions>=2.1.0
 python-docx>=1.1.2
 pydantic>=2.0.0
 pytest>=8.0.0

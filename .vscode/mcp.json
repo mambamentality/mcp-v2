@@ -1,0 +1,22 @@
+{
+    "servers": {
+        "mcp-server-agente-acta-remote-server": {
+            "type": "http",
+            "url": "https://mcp-server-agente-acta-e0dxahe6apcqcadn.eastus-01.azurewebsites.net/runtime/webhooks/mcp",
+            "headers": {
+                "x-functions-key": "${input:mcp-server-agente-actaMcpHostKey}"
+            }
+        }
+    },
+    "inputs": [
+        {
+            "type": "command",
+            "id": "mcp-server-agente-actaMcpHostKey",
+            "command": "azureFunctions.getMcpHostKey",
+            "args": {
+                "resourceId": "/subscriptions/71e8a1b3-0835-4532-90de-b22bb3822301/resourceGroups/rg-mcp-actas-a/providers/Microsoft.Web/sites/mcp-server-agente-acta",
+                "projectType": "McpExtensionServer"
+            }
+        }
+    ]
+}
