@@ -1,42 +1,91 @@
 [
   {
-    "module": "acta_wizard.py",
-    "toolName": "ActaWizard",
-    "description": "Administra el flujo de captura de datos para crear un acta.",
-    "properties": [
-      {
-        "propertyName": "action",
-        "propertyType": "string",
-        "description": "Acción a ejecutar: create_session | retrieve_session | save_responses. Por defecto create_session.",
-        "isRequired": false,
-        "isArray": false
-      },
-      {
-        "propertyName": "sessionId",
-        "propertyType": "string",
-        "description": "Id de la sesión existente. Requerido para retrieve_session y save_responses.",
-        "isRequired": false,
-        "isArray": false
-      },
-      {
-        "propertyName": "responses",
-        "propertyType": "object",
-        "description": "Diccionario campo -> valor con las respuestas capturadas (usado en save_responses).",
-        "isRequired": false,
-        "isArray": false
-      }
-    ]
-  },
-  {
     "module": "generate_draft.py",
     "toolName": "GenerateDraft",
-    "description": "Genera un borrador de acta en Markdown a partir de los datos capturados.",
+    "description": "Genera un borrador de acta en Markdown a partir de los datos explícitos de la conversación.",
     "properties": [
       {
-        "propertyName": "sessionId",
+        "propertyName": "titulo",
         "propertyType": "string",
-        "description": "Id de la sesión con los datos capturados.",
+        "description": "Título del acta.",
         "isRequired": true,
+        "isArray": false
+      },
+      {
+        "propertyName": "fecha",
+        "propertyType": "string",
+        "description": "Fecha de la reunión.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "hora_inicio",
+        "propertyType": "string",
+        "description": "Hora de inicio.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "hora_fin",
+        "propertyType": "string",
+        "description": "Hora de fin.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "lugar",
+        "propertyType": "string",
+        "description": "Lugar de la reunión.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "participantes",
+        "propertyType": "string",
+        "description": "Participantes de la reunión.",
+        "isRequired": false,
+        "isArray": true
+      },
+      {
+        "propertyName": "objetivo",
+        "propertyType": "string",
+        "description": "Objetivo de la reunión.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "antecedentes",
+        "propertyType": "string",
+        "description": "Antecedentes o contexto.",
+        "isRequired": false,
+        "isArray": false
+      },
+      {
+        "propertyName": "temas_tratados",
+        "propertyType": "string",
+        "description": "Temas tratados.",
+        "isRequired": false,
+        "isArray": true
+      },
+      {
+        "propertyName": "acuerdos",
+        "propertyType": "string",
+        "description": "Acuerdos alcanzados.",
+        "isRequired": false,
+        "isArray": true
+      },
+      {
+        "propertyName": "compromisos",
+        "propertyType": "string",
+        "description": "Compromisos derivados.",
+        "isRequired": false,
+        "isArray": true
+      },
+      {
+        "propertyName": "observaciones",
+        "propertyType": "string",
+        "description": "Observaciones adicionales.",
+        "isRequired": false,
         "isArray": false
       },
       {

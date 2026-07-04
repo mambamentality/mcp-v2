@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Union
 
 from .llm_service import LLMService
-from .schemas import ActaSession, Draft
+from .schemas import ActaFormData, ActaSession, Draft
 from .storage import DraftStore
 
 
@@ -13,9 +13,11 @@ class DraftManager:
         self.store = DraftStore()
         self.llm = LLMService()
 
-    def create_draft(self, session: ActaSession, context: Optional[str] = None) -> Draft:
-        markdown = self.llm.generate_markdown_draft(session.data, context)
-        draft = Draft(session_id=session.session_id, draft_markdown=markdown)
+    def create_draft(self, data: Union[ActaFormData, ActaSession], context: Optional[str] = None) -> Draft:
+        form_data = data.data if isinstance(data, ActaSession) else data
+        markdown = self.llm.generate_markdown_draft(form_data, context)
+        session_id = data.session_id if isinstance(data, ActaSession) else None
+        draft = Draft(session_id=session_id, draft_markdown=markdown)
         self.store.save_draft(draft)
         return draft
 
