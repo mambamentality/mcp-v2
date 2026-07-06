@@ -16,10 +16,10 @@ import azure.functions as func
 import pytest
 
 from tools.approve_draft import register_approve_draft_tool
+from tools.ask_questions import register_ask_questions_tool
 from tools.generate_docx import register_generate_docx_tool
 from tools.generate_draft import register_generate_draft_tool
 from tools.update_draft import register_update_draft_tool
-from tools.validate_acta import register_validate_acta_tool
 
 DATA_DIR = Path(__file__).resolve().parent.parent / ".data"
 
@@ -61,6 +61,35 @@ def test_generate_draft_con_datos_directos(app):
     assert "draftId" in result
     assert result["status"] == "pendingApproval"
     assert "Comité de Tecnología" in result["draftMarkdown"]
+
+
+def test_ask_questions_devuelve_la_siguiente_pregunta(app):
+    ask_questions = register_ask_questions_tool(app)
+
+    result = _call(ask_questions, {"data": {"titulo": "Reunión de prueba"}})
+
+    assert result["status"] == "question"
+    assert result["field"] == "fecha"
+    assert "fecha" in result["question"].lower()
+
+
+def test_ask_questions_indica_cuando_termina(app):
+    ask_questions = register_ask_questions_tool(app)
+
+    result = _call(
+        ask_questions,
+        {
+            "data": {
+                "titulo": "Reunión de prueba",
+                "fecha": "2026-07-06",
+                "participantes": ["Ana"],
+                "objetivo": "Revisar",
+                "acuerdos": ["Acordado"],
+            }
+        },
+    )
+
+    assert result["status"] == "done"
 
 
 def test_full_flow_hasta_generar_docx(app):
@@ -123,10 +152,10 @@ def test_update_draft_borrador_aprobado_no_se_edita(app):
 def test_tool_property_declarado_como_json_valido():
     """Los tools deben declarar tool_properties como JSON válido."""
     import tools.approve_draft as m4
+    import tools.ask_questions as m6
     import tools.generate_docx as m5
     import tools.generate_draft as m2
     import tools.update_draft as m3
-    import tools.validate_acta as m6
 
     for module in (m2, m3, m4, m5, m6):
         props = json.loads(module._TOOL_PROPERTIES)

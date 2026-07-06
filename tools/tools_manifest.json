@@ -112,10 +112,18 @@
     ]
   },
   {
-    "module": "generate_meeting_minutes.py",
-    "toolName": "generate_meeting_minutes",
-    "description": "Genera un borrador de acta en markdown a partir de fragmentos de actas en JSON.",
-    "properties": []
+    "module": "ask_questions.py",
+    "toolName": "AskQuestions",
+    "description": "Hace preguntas una por una para completar los datos del acta sin usar sesiones.",
+    "properties": [
+      {
+        "propertyName": "data",
+        "propertyType": "string",
+        "description": "Datos ya recolectados del acta en formato JSON o dict.",
+        "isRequired": false,
+        "isArray": false
+      }
+    ]
   },
   {
     "module": "approve_draft.py",
@@ -130,12 +138,6 @@
         "isArray": false
       }
     ]
-  },
-  {
-    "module": "extract_agreements.py",
-    "toolName": "extract_agreements",
-    "description": "Extrae acuerdos y responsabilidades de fragmentos de actas en JSON.",
-    "properties": []
   },
   {
     "module": "update_draft.py",
@@ -153,20 +155,6 @@
         "propertyName": "instruction",
         "propertyType": "string",
         "description": "Instrucción en texto libre sobre qué cambiar en el borrador.",
-        "isRequired": true,
-        "isArray": false
-      }
-    ]
-  },
-  {
-    "module": "validate_acta.py",
-    "toolName": "ValidateActa",
-    "description": "Valida que los campos obligatorios del acta estén completos.",
-    "properties": [
-      {
-        "propertyName": "sessionId",
-        "propertyType": "string",
-        "description": "Id de la sesión a validar.",
         "isRequired": true,
         "isArray": false
       }
