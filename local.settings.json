@@ -2,6 +2,14 @@
   "IsEncrypted": false,
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "SP_TENANT_ID": "6ac75dba-d6d2-4772-8a34-ee5cb5356b92",
+    "SP_CLIENT_ID": "942bdd45-d034-440a-8562-1d0bb97d89ac",
+    "SP_CLIENT_SECRET": "v-l8Q~4tqNkQb7COkCAQ1QiIoEblRAzSYGrPdcgC",
+    "SP_SITE_ID": "4vdzn7.sharepoint.com,3446f892-8867-41d3-912a-efdd3161b0fb,e5a8c1fb-49d1-4cfd-bb93-94df46e0ac9c",
+    "AZURE_OPENAI_ENDPOINT": "https://<tu-recurso>.openai.azure.com",
+    "AZURE_OPENAI_KEY": "<key>",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-4o",
+    "AZURE_OPENAI_API_VERSION": "2024-08-01-preview"
   }
 }
