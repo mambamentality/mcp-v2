@@ -71,7 +71,7 @@ except Exception as exc:
     print(f"ERROR: {exc}")
 
 """
-
+"""
 # test_maestro.py
 import os, json
 with open("local.settings.json", encoding="utf-8") as f:
@@ -85,3 +85,26 @@ print(f"Filas en Acta Maestra: {len(rows)}")
 if rows:
     print("Columnas encontradas:", list(rows[0].keys()))
     print("Primera fila:", rows[0])
+    """
+
+import os, json
+
+with open("local.settings.json", encoding="utf-8") as f:
+    settings = json.load(f)
+    for key, value in settings["Values"].items():
+        os.environ[key] = value
+
+from tools import sharepoint_client
+from tools.extract_backup_content import _extract_pdf, _find_cite
+
+# probamos con un PDF de respaldo real, no escaneado (debería ser texto digital)
+content = sharepoint_client.download_file(
+    "Actas/Insumos/2024/23-04-2024/03.1 Informe de Inversiones al 31.03.2024.pdf"
+)
+text = _extract_pdf(content)
+
+print("Largo del texto:", len(text))
+print("Cite encontrado:", _find_cite(text))
+print()
+print("Primeros 1000 caracteres:")
+print(text[:1000])

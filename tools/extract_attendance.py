@@ -113,14 +113,20 @@ def _map_columns(sheet, header_row_idx: int):
 
     return header_row_idx, name_cols, total_col, hora_inicio_col, hora_fin_col
 
+# tools/extract_attendance.py — reemplazar _find_data_row
+
+from .date_utils import normalize_date
+
 
 def _find_data_row(sheet, header_row_idx: int, target_fecha: Optional[str]) -> Optional[int]:
+    target_normalized = normalize_date(target_fecha) if target_fecha else None
+
     for row in sheet.iter_rows(min_row=header_row_idx + 1, max_row=header_row_idx + 200):
         first_cell = row[0]
         if first_cell.value is None:
             continue
-        if target_fecha is None:
+        if target_normalized is None:
             return first_cell.row
-        if str(first_cell.value).strip() == str(target_fecha).strip():
+        if normalize_date(first_cell.value) == target_normalized:
             return first_cell.row
     return None
