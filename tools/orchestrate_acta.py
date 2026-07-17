@@ -53,7 +53,7 @@ def register_process_gestion_directory_tool(app: func.FunctionApp):
             file_map = {item["name"]: item for item in items if not item["isFolder"]}
 
             convocatoria_data = _process_convocatoria(file_map, folder_path)
-            attendance_data = _process_attendance(file_map, folder_path)
+            attendance_data = _process_attendance(file_map, folder_path, convocatoria_data)
 
             maestro_rows = maestro_store.read_maestro()
             agenda_matched = match_to_maestro(convocatoria_data["ordenDelDia"], maestro_rows)
@@ -124,7 +124,7 @@ def _process_convocatoria(file_map: Dict[str, Any], folder_path: str) -> Dict[st
     }
 
 
-def _process_attendance(file_map: Dict[str, Any], folder_path: str) -> Dict[str, Any]:
+def _process_attendance(file_map: Dict[str, Any], folder_path: str, convocatoria_data: Dict[str, Any]) -> Dict[str, Any]:
     from openpyxl import load_workbook
 
     att_file = next((name for name in file_map if "asistencia" in name.lower() and name.lower().endswith((".xlsx", ".xlsm"))), None)
@@ -136,7 +136,10 @@ def _process_attendance(file_map: Dict[str, Any], folder_path: str) -> Dict[str,
     sheet = wb.active
 
     header_row_idx, name_cols, total_col, hora_inicio_col, hora_fin_col = _find_header(sheet)
-    data_row = _find_data_row(sheet, header_row_idx, None)
+
+    data_row = _find_data_row(sheet, header_row_idx, convocatoria_data.get("fecha"))
+    if data_row is None:
+        data_row = _find_data_row(sheet, header_row_idx, None)
     if data_row is None:
         raise ValueError("No se encontró una fila de sesión en el Excel de asistencia.")
 

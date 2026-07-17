@@ -77,11 +77,6 @@ def register_extract_backup_content_tool(app: func.FunctionApp):
     return extract_backup_content
 
 
-def _extract_pdf(content: bytes) -> str:
-    doc = fitz.open(stream=content, filetype="pdf")
-    return "\n".join(page.get_text() for page in doc)
-
-
 def _extract_docx(content: bytes) -> str:
     doc = Document(io.BytesIO(content))
     return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
@@ -114,3 +109,11 @@ def _extract_xlsx(content: bytes) -> str:
 def _find_cite(text: str) -> Optional[str]:
     match = _CITE_RE.search(text)
     return match.group(0).strip() if match else None
+
+# tools/extract_backup_content.py — reemplazar la función _extract_pdf
+
+from .ocr_helper import extract_text_with_ocr_fallback
+
+
+def _extract_pdf(content: bytes) -> str:
+    return extract_text_with_ocr_fallback(content)

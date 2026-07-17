@@ -43,10 +43,18 @@ def _headers() -> Dict[str, str]:
     return {"Authorization": f"Bearer {_get_token()}"}
 
 
-def list_children(folder_path: str) -> List[Dict[str, Any]]:
+# tools/sharepoint_client.py — reemplazar la función list_children completa
+
+def list_children(folder_path: str = "") -> List[Dict[str, Any]]:
+    """Lista archivos/carpetas de una ruta relativa a la raíz del drive del sitio.
+    Si folder_path está vacío, lista la raíz del drive."""
     site_id = get_env("SP_SITE_ID")
     clean_path = folder_path.strip("/")
-    url = f"{GRAPH_BASE}/sites/{site_id}/drive/root:/{clean_path}:/children"
+
+    if clean_path:
+        url = f"{GRAPH_BASE}/sites/{site_id}/drive/root:/{clean_path}:/children"
+    else:
+        url = f"{GRAPH_BASE}/sites/{site_id}/drive/root/children"
 
     items = []
     while url:
@@ -60,7 +68,7 @@ def list_children(folder_path: str) -> List[Dict[str, Any]]:
         {
             "id": item["id"],
             "name": item["name"],
-            "path": f"{clean_path}/{item['name']}",
+            "path": f"{clean_path}/{item['name']}" if clean_path else item["name"],
             "isFolder": "folder" in item,
             "size": item.get("size"),
             "webUrl": item.get("webUrl"),
