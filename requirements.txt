@@ -13,4 +13,4 @@ PyMuPDF>=1.24.0
 openpyxl>=3.1.2
 python-pptx>=0.6.23
 openai>=1.30.0
-pytesseract>=0.3.10
+azure-ai-documentintelligence>=1.0.0
