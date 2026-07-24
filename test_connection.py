@@ -178,19 +178,44 @@ with open("local.settings.json", encoding="utf-8") as f:
         os.environ[key] = value
 
 import azure.functions as func
+from tools.orchestrate_acta import register_process_gestion_directory_tool
+from tools.set_attendance_modality import register_set_attendance_modality_tool
+from tools.approve_acta import register_approve_acta_tool
 from tools.finalize_acta import register_finalize_acta_tool
+from tools.acta_draft_store import ActaDraftStore
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+process_gestion_directory = register_process_gestion_directory_tool(app)
+set_modality = register_set_attendance_modality_tool(app)
+approve_acta = register_approve_acta_tool(app)
 finalize_acta = register_finalize_acta_tool(app)
 
-result = finalize_acta({
-    "arguments": {"actaId": "78beb6bc-fc8b-475e-80ca-c95a6a29a315"}
+# 1. Proceso completo — genera un actaId NUEVO con los datos ya corregidos
+result1 = process_gestion_directory({
+    "arguments": {
+        "gestion": "2024",
+        "directorio": "23-04-2024",
+        "numeroActa": "01-2024-v4",  # nuevo, para no chocar con el archivo bloqueado anterior
+    }
 })
+print("PROCESS:", result1)
+acta_id = json.loads(result1)["actaId"]
 
-result_data = json.loads(result)
-print("status:", result_data.get("status"))
-print("fileName:", result_data.get("fileName"))
-print("webUrl:", result_data.get("webUrl"))
-print("maestroActualizado:", result_data.get("maestroActualizado"))
-if result_data.get("status") == "error":
-    print("message:", result_data.get("message"))
+# 2. Modalidad
+store = ActaDraftStore()
+acta = store.get_acta(acta_id)
+nombres = [a["nombre"] for a in acta["asistentes"]]
+modalidad_map = {nombre: "presencial" for nombre in nombres}
+
+result2 = set_modality({
+    "arguments": {"actaId": acta_id, "modalidadPorPersona": modalidad_map}
+})
+print("MODALITY:", result2)
+
+# 3. Aprobar
+result3 = approve_acta({"arguments": {"actaId": acta_id}})
+print("APPROVE:", result3)
+
+# 4. Finalizar
+result4 = finalize_acta({"arguments": {"actaId": acta_id}})
+print("FINALIZE:", result4)
