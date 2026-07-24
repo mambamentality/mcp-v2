@@ -16,6 +16,7 @@ _TOOL_PROPERTIES = tool_properties_json(
         ToolProperty("nuevaNarrativa", "string", "Nuevo texto narrativo para ese punto.", isRequired=False),
         ToolProperty("nuevaDeterminacion", "string", "Nuevo texto de determinación para ese punto.", isRequired=False),
         ToolProperty("nuevoNumeroActa", "string", "Corrige el número de acta sugerido.", isRequired=False),
+        ToolProperty("nuevaSecretaria", "string", "Nombre de quien actúa como Secretaria del acta.", isRequired=False),
     ]
 )
 
@@ -47,6 +48,11 @@ def register_update_acta_point_tool(app: func.FunctionApp):
                 acta["numeroActaConfirmado"] = True
                 store.save_acta(str(acta_id), acta)
                 return json.dumps({"updated": True, "numeroActa": acta["numeroActa"]}, ensure_ascii=False)
+
+            if args.get("nuevaSecretaria"):
+                acta["secretaria"] = args["nuevaSecretaria"]
+                store.save_acta(str(acta_id), acta)
+                return json.dumps({"updated": True, "secretaria": acta["secretaria"]}, ensure_ascii=False)
 
             punto_numero = args.get("puntoNumero")
             if not punto_numero:

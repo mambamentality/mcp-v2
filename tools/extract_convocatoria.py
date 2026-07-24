@@ -77,30 +77,47 @@ def _detect_modalidad(text: str) -> str:
 
 
 def _parse_roles(text: str) -> Dict[str, List[str]]:
-    """Los nombres preceden al encabezado de su rol en la convocatoria real
-    (ej. 'Andrés Urquidi... Directores/as'), por eso el bloque de nombres
-    pendiente se asigna al header que se acaba de encontrar, no al anterior."""
-    match = re.search(r"Señores?/as:\s*(.*?)(?:\n\s*Banco FIE|\Z)", text, re.IGNORECASE | re.DOTALL)
+    """Funciona tanto si el OCR separa nombres por saltos de línea (Tesseract)
+    como si los devuelve en texto corrido dentro de una sola línea (Document
+    Intelligence). Usa los propios encabezados de rol como delimitadores."""
+    match = re.search(r"Señores?/as:\s*(.*?)Banco FIE S\.?A\.?\s+Presente", text, re.IGNORECASE | re.DOTALL)
     if not match:
         return {}
 
-    block = match.group(1)
-    lines = [line.strip() for line in block.splitlines() if line.strip()]
+    block = match.group(1).strip()
 
-    roles: Dict[str, List[str]] = {header: [] for header in _ROLE_HEADERS}
-    pending_names: List[str] = []
+    header_pattern = "|".join(re.escape(h) for h in _ROLE_HEADERS)
+    parts = re.split(f"({header_pattern})", block)
 
-    for line in lines:
-        header_hit = next((h for h in _ROLE_HEADERS if h.lower() in line.lower()), None)
-        if header_hit:
-            roles[header_hit].extend(pending_names)
-            pending_names = []
+    roles: Dict[str, List[str]] = {}
+    for i in range(1, len(parts), 2):
+        header = parts[i].strip()
+        names_text = parts[i - 1].strip()
+        names = _split_names(names_text)
+        if names:
+            roles[header] = names
+
+    return roles
+
+
+def _split_names(names_text: str) -> List[str]:
+    """Separa un bloque de nombres en personas individuales. Cada nombre
+    real tiene 2-4 palabras (nombre + apellido, a veces con inicial); esta
+    heurística agrupa palabras consecutivas capitalizadas en nombres."""
+    if "\n" in names_text:
+        return [line.strip() for line in names_text.splitlines() if line.strip()]
+
+    words = names_text.split()
+    names = []
+    i = 0
+    while i < len(words):
+        if i + 1 < len(words):
+            names.append(f"{words[i]} {words[i+1]}")
+            i += 2
         else:
-            pending_names.append(line)
-
-    # Nombres que quedaron sin un header después (no debería pasar en el
-    # formato esperado) se descartan en vez de asignarse a algo incorrecto.
-    return {role: names for role, names in roles.items() if names}
+            names.append(words[i])
+            i += 1
+    return names
 
 
 # tools/extract_convocatoria.py — reemplazar la función _extract_text

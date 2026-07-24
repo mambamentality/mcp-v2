@@ -24,11 +24,14 @@ def _frase_grupo(nombres: List[str]) -> str:
 
 def build_intro_fields(acta_data: Dict[str, Any]) -> Dict[str, Any]:
     asistentes = acta_data.get("asistentes", [])
-    roles = acta_data.get("roles", {})
 
     def por_rol(rol: str) -> List[Dict[str, Any]]:
-        nombres_rol = set(roles.get(rol, []))
-        return [a for a in asistentes if a.get("nombre") in nombres_rol]
+        # Usa el rol ya resuelto por el catálogo de personas en cada
+        # asistente (people_catalog.resolve_name), en vez de cruzar contra
+        # el diccionario de roles de la Convocatoria — ese solo trae
+        # Directores/Comisión Fiscalizadora, y con nombres tal como los
+        # reconoció el OCR, que no siempre calzan con el nombre canónico.
+        return [a for a in asistentes if a.get("rol") == rol]
 
     directores = _agrupar_por_modalidad(por_rol("Directores/as"))
     fiscalizacion = _agrupar_por_modalidad(por_rol("Comisión Fiscalizadora"))

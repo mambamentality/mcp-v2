@@ -1,4 +1,4 @@
-# tools/orchestrate_acta.py — ProcessGestionDirectory
+# tools/orchestrate_acta.py — VERSIÓN CONSOLIDADA COMPLETA, reemplaza el archivo entero
 import json
 import logging
 import re
@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import azure.functions as func
 
-from . import sharepoint_client, paths, maestro_store
+from . import sharepoint_client, paths, maestro_store, people_catalog
 from .acta_draft_store import ActaDraftStore
 from .extract_convocatoria import _extract_text as _pdf_text, _first_match, _detect_modalidad, _parse_orden_del_dia, _parse_roles, _DATE_RE, _TIME_RE, _PLACE_RE
 from .extract_attendance import _find_header, _find_data_row, io_bytesio
@@ -28,7 +28,7 @@ _TOOL_PROPERTIES = tool_properties_json(
     ]
 )
 
-_EXCLUDE_KEYWORDS = ["convocatoria", "asistencia", "lista de asistencia", "acta maestra"]
+_EXCLUDE_KEYWORDS = ["convocatoria", "asistencia", "lista de asistencia", "acta maestra", "catalogo_personas"]
 
 
 def register_process_gestion_directory_tool(app: func.FunctionApp):
@@ -62,6 +62,8 @@ def register_process_gestion_directory_tool(app: func.FunctionApp):
             fecha_corte = convocatoria_data.get("fecha", "")
             fill_narratives(agenda_with_backups, fecha_corte=fecha_corte)
 
+            presidenta = next((a["nombre"] for a in attendance_data["asistentes"] if a.get("rol") == "Presidencia"), "")
+
             acta_id = str(uuid4())
             numero_sugerido = args.get("numeroActa") or _suggest_numero_acta(gestion)
 
@@ -70,6 +72,7 @@ def register_process_gestion_directory_tool(app: func.FunctionApp):
                 "numeroActa": numero_sugerido,
                 "numeroActaConfirmado": bool(args.get("numeroActa")),
                 "fecha": convocatoria_data.get("fecha", ""),
+                "fechaTexto": convocatoria_data.get("fecha", ""),  # alias: la plantilla usa este nombre
                 "horaInicio": convocatoria_data.get("hora", ""),
                 "horaFin": attendance_data.get("horaFin"),
                 "lugar": convocatoria_data.get("lugar", ""),
@@ -82,6 +85,8 @@ def register_process_gestion_directory_tool(app: func.FunctionApp):
                 "outputFolder": paths.generadas_folder(gestion, directorio),
                 "gestion": gestion,
                 "directorio": directorio,
+                "presidenta": presidenta,
+                "secretaria": "",  # se completa manualmente vía UpdateActaPoint antes de aprobar
             }
             acta_data.update(build_intro_fields(acta_data))
             store.save_acta(acta_id, acta_data)
@@ -93,6 +98,7 @@ def register_process_gestion_directory_tool(app: func.FunctionApp):
                     "resumen": {
                         "puntos": len(agenda_with_backups),
                         "asistentes": len(attendance_data.get("asistentes", [])),
+                        "asistentesSinRolResuelto": sum(1 for a in attendance_data.get("asistentes", []) if not a.get("rol")),
                         "puntosNuevos": _count_estado(agenda_with_backups, "punto_nuevo"),
                         "puntosPorConfirmar": _count_estado(agenda_with_backups, "requiere_confirmacion"),
                     },
@@ -125,13 +131,15 @@ def _process_convocatoria(file_map: Dict[str, Any], folder_path: str) -> Dict[st
 
 
 def _process_attendance(file_map: Dict[str, Any], folder_path: str, convocatoria_data: Dict[str, Any]) -> Dict[str, Any]:
-    from openpyxl import load_workbook
-
-    att_file = next((name for name in file_map if "asistencia" in name.lower() and name.lower().endswith((".xlsx", ".xlsm"))), None)
+    att_file = next(
+        (name for name in file_map if "asistencia" in name.lower() and name.lower().endswith((".xlsx", ".xlsm"))),
+        None,
+    )
     if not att_file:
         raise ValueError("No se encontró el Excel de Lista de Asistencia en el directorio.")
 
     content = sharepoint_client.download_file(f"{folder_path}/{att_file}")
+    from openpyxl import load_workbook
     wb = load_workbook(io_bytesio(content), data_only=True)
     sheet = wb.active
 
@@ -143,10 +151,23 @@ def _process_attendance(file_map: Dict[str, Any], folder_path: str, convocatoria
     if data_row is None:
         raise ValueError("No se encontró una fila de sesión en el Excel de asistencia.")
 
+    # Resolver cada nombre crudo del Excel contra el catálogo de personas,
+    # para obtener rol/género/nombre canónico (necesario para los párrafos
+    # de Alta Gerencia/Administración, que la Convocatoria no lista).
+    catalog = people_catalog.read_catalog()
+
     attendees = []
-    for col_idx, name in name_cols.items():
+    for col_idx, raw_name in name_cols.items():
         value = sheet.cell(row=data_row, column=col_idx).value
-        attendees.append({"nombre": name, "asistio": bool(value), "modalidad": ""})
+        resolved = people_catalog.resolve_name(raw_name, catalog)
+        attendees.append({
+            "nombre": resolved["nombreCompleto"] if resolved else raw_name,
+            "asistio": bool(value),
+            "rol": resolved.get("rol", "") if resolved else "",
+            "genero": resolved.get("genero", "") if resolved else "",
+            "cargo": resolved.get("cargo", "") if resolved else "",
+            "modalidad": "",
+        })
 
     return {
         "asistentes": attendees,

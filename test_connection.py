@@ -87,6 +87,10 @@ if rows:
     print("Primera fila:", rows[0])
     """
 
+
+
+
+"""
 import os, json
 
 with open("local.settings.json", encoding="utf-8") as f:
@@ -108,3 +112,85 @@ print("Cite encontrado:", _find_cite(text))
 print()
 print("Primeros 1000 caracteres:")
 print(text[:1000])
+
+"""
+
+
+
+"""   PRUEBA DE EXTRACCIÓN DE TEXTO DE LA CONVOCATORIA DE DIRECTORIO (PDF)
+import os, json
+
+with open("local.settings.json", encoding="utf-8") as f:
+    settings = json.load(f)
+    for key, value in settings["Values"].items():
+        os.environ[key] = value
+
+from tools import sharepoint_client
+from tools.extract_convocatoria import (
+    _extract_text, _first_match, _detect_modalidad,
+    _parse_orden_del_dia, _parse_roles, _DATE_RE, _TIME_RE, _PLACE_RE,
+)
+
+content = sharepoint_client.download_file(
+    "Actas/Insumos/2024/23-04-2024/00. 2024.04.23 Convocatoria Directorio.pdf"
+)
+text = _extract_text(content)
+
+print("FECHA:", _first_match(_DATE_RE, text))
+print("HORA:", _first_match(_TIME_RE, text))
+print("LUGAR:", _first_match(_PLACE_RE, text))
+print("MODALIDAD:", _detect_modalidad(text))
+print()
+print("=== ORDEN DEL DIA ===")
+orden = _parse_orden_del_dia(text)
+print(f"Cantidad de puntos top-level: {len(orden)}")
+print(json.dumps(orden, ensure_ascii=False, indent=2))
+print()
+print("=== ROLES ===")
+print(json.dumps(_parse_roles(text), ensure_ascii=False, indent=2))
+print()
+print("=== TEXTO CRUDO ALREDEDOR DE 'Señores' (repr) ===")
+idx = text.lower().find("señores")
+print(repr(text[max(0, idx-50):idx+600]))
+
+"""
+
+"""
+import os, json
+
+with open("local.settings.json", encoding="utf-8") as f:
+    settings = json.load(f)
+    for key, value in settings["Values"].items():
+        os.environ[key] = value
+
+from tools.people_catalog import read_catalog
+catalog = read_catalog()
+print(f"Total de personas cargadas: {len(catalog)}")
+for p in catalog:
+    print(f"  {p['nombreCompleto']} — {p['rol']}")
+
+"""
+import os, json
+
+with open("local.settings.json", encoding="utf-8") as f:
+    settings = json.load(f)
+    for key, value in settings["Values"].items():
+        os.environ[key] = value
+
+import azure.functions as func
+from tools.finalize_acta import register_finalize_acta_tool
+
+app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+finalize_acta = register_finalize_acta_tool(app)
+
+result = finalize_acta({
+    "arguments": {"actaId": "78beb6bc-fc8b-475e-80ca-c95a6a29a315"}
+})
+
+result_data = json.loads(result)
+print("status:", result_data.get("status"))
+print("fileName:", result_data.get("fileName"))
+print("webUrl:", result_data.get("webUrl"))
+print("maestroActualizado:", result_data.get("maestroActualizado"))
+if result_data.get("status") == "error":
+    print("message:", result_data.get("message"))
