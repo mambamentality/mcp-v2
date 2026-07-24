@@ -4,13 +4,6 @@ import logging
 
 import azure.functions as func
 
-# Tools originales (modo manual, se mantienen como fallback)
-from tools.ask_questions import register_ask_questions_tool
-from tools.generate_draft import register_generate_draft_tool
-from tools.update_draft import register_update_draft_tool
-from tools.approve_draft import register_approve_draft_tool
-from tools.generate_docx import register_generate_docx_tool
-
 # Pipeline nuevo (SharePoint + extracción + Acta Maestra)
 from tools.sharepoint_tools import (
     register_sharepoint_list_directory_tool,
